@@ -59,66 +59,68 @@ self.onmessage = async function(e) {
 async function analyserTexte(text) {
     let errors = [];
 
-    // --- 1. ANALYSE GRAMMATICALE ET TYPOGRAPHIQUE (via rules.js) ---
-    // On l'applique sur le texte brut pour préserver les espaces et le contexte
-    grammarRules.forEach(rule => {
-        let match;
-        // On cherche toutes les occurrences de la règle dans le texte
-        while ((match = rule.regex.exec(text)) !== null) {
-            // On extrait un bout de phrase pour le contexte
-            const contextStart = Math.max(0, match.index - 20);
-            const contextEnd = Math.min(text.length, match.index + match[0].length + 20);
-            const context = text.substring(contextStart, contextEnd).replace(/\n/g, ' '); // Enlève les sauts de ligne pour l'affichage
+    // Découpage du texte en PARAGRAPHES (ignore les lignes vides)
+    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0);
+    const totalParagraphs = paragraphs.length;
+    let totalWords = 0;
+    let processedParagraphs = 0;
 
-            errors.push({
-                word: match[0], // L'erreur exacte trouvée
-                context: context,
-                type: rule.type,
-                message: rule.message
-            });
-        }
-    });
+    // On boucle sur chaque paragraphe
+    for (let i = 0; i < totalParagraphs; i++) {
+        const paragraph = paragraphs[i];
+        const motsBruts = paragraph.split(/\s+/).filter(m => m.trim().length > 0);
+        totalWords += motsBruts.length;
 
-    // --- 2. ANALYSE ORTHOGRAPHIQUE (via Typo.js) ---
-    const motsBruts = text.split(/\s+/);
-    const totalWords = motsBruts.length;
-    const chunkSize = 500; 
-    let processedWords = 0;
+        // 1. ANALYSE GRAMMATICALE ET TYPO (sur le paragraphe entier)
+        grammarRules.forEach(rule => {
+            let match;
+            rule.regex.lastIndex = 0; // Réinitialise la regex
+            while ((match = rule.regex.exec(paragraph)) !== null) {
+                errors.push({
+                    word: match[0], 
+                    context: paragraph, // On renvoie tout le paragraphe !
+                    type: rule.type,
+                    message: rule.message
+                });
+            }
+        });
 
-    for (let i = 0; i < totalWords; i += chunkSize) {
-        const chunk = motsBruts.slice(i, i + chunkSize);
-        
-        chunk.forEach((motBrut, index) => {
+        // 2. ANALYSE ORTHOGRAPHIQUE (mot par mot dans le paragraphe)
+        motsBruts.forEach(motBrut => {
             let motPropre = motBrut.replace(/^[.,!?()\[\]{};:«»"“”\-_]+|[.,!?()\[\]{};:«»"“”\-_]+$/g, '');
             motPropre = motPropre.replace(/^[ldjmntsctyqu]['’]/i, '');
 
             if (motPropre.length > 1 && isNaN(motPropre)) {
-                let estValide = checker.check(motPropre) || checker.check(motPropre.toLowerCase());
+                const estAcronyme = (motPropre === motPropre.toUpperCase());
+                const estDansDictPerso = typeof dictionnairePersonnel !== 'undefined' && dictionnairePersonnel.has(motPropre.toLowerCase());
 
-                if (!estValide && motPropre.includes('-')) {
-                    const sousMots = motPropre.split('-');
-                    estValide = sousMots.every(sm => sm.length <= 1 || checker.check(sm) || checker.check(sm.toLowerCase()));
-                }
+                if (!estAcronyme && !estDansDictPerso) {
+                    let estValide = checker.check(motPropre) || checker.check(motPropre.toLowerCase());
 
-                if (!estValide) {
-                    const globalIndex = i + index;
-                    const contextStart = Math.max(0, globalIndex - 3);
-                    const contextEnd = Math.min(totalWords, globalIndex + 4);
-                    const context = motsBruts.slice(contextStart, contextEnd).join(' ');
+                    if (!estValide && motPropre.includes('-')) {
+                        const sousMots = motPropre.split('-');
+                        estValide = sousMots.every(sm => sm.length <= 1 || checker.check(sm) || checker.check(sm.toLowerCase()));
+                    }
 
-                    errors.push({ 
-                        word: motPropre, 
-                        context: context,
-                        type: "Orthographe",
-                        message: "Mot inconnu dans le dictionnaire."
-                    });
+                    if (!estValide) {
+                        errors.push({ 
+                            word: motPropre, 
+                            context: paragraph, // On renvoie tout le paragraphe !
+                            type: "Orthographe",
+                            message: "Mot inconnu dans le dictionnaire."
+                        });
+                    }
                 }
             }
         });
 
-        processedWords += chunk.length;
-        const progress = 35 + (processedWords / totalWords) * 65; 
-        self.postMessage({ type: 'PROGRESS', progress: progress, text: `Vérification : ${processedWords} mots sur ${totalWords}...` });
+        processedParagraphs++;
+        
+        // Mise à jour de la jauge (pour ne pas saturer, on l'envoie tous les 5 paragraphes)
+        if (processedParagraphs % 5 === 0 || processedParagraphs === totalParagraphs) {
+            const progress = 35 + (processedParagraphs / totalParagraphs) * 65; 
+            self.postMessage({ type: 'PROGRESS', progress: progress, text: `Analyse : ${processedParagraphs} paragraphes sur ${totalParagraphs}...` });
+        }
     }
 
     self.postMessage({ type: 'DONE', errors: errors, totalWords: totalWords });
