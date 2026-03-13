@@ -199,10 +199,31 @@ function displayResults(errors, totalWords) {
         errorList.innerHTML = "<p>Aucune faute détectée ! 🎉</p>";
         return;
     }
+    
+    // On vide la liste avant de la remplir
+    errorList.innerHTML = "";
+    
     errors.forEach(err => {
         const div = document.createElement('div');
         div.className = 'error-item';
-        div.innerHTML = `<strong>${err.word}</strong> - <span class="error-context">...${err.context}...</span>`;
+        
+        // On donne une couleur selon le type d'erreur pour aider l'utilisateur
+        let typeColor = "#6B7280"; // Gris par défaut (Orthographe)
+        if (err.type === "Typographie") typeColor = "#3B82F6"; // Bleu
+        if (err.type === "Grammaire") typeColor = "#F59E0B"; // Orange
+
+        div.innerHTML = `
+            <div style="margin-bottom: 5px;">
+                <span style="background-color: ${typeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px;">
+                    ${err.type}
+                </span>
+                <strong>${err.word}</strong>
+            </div>
+            <div class="error-context">...${err.context}...</div>
+            <div style="font-size: 12px; color: #4B5563; margin-top: 4px;">
+                💡 <em>${err.message}</em>
+            </div>
+        `;
         errorList.appendChild(div);
     });
 }
