@@ -125,15 +125,15 @@ const grammarRules = [
     // --- 3. RÈGLES VERBALES DE BASE ---
     {
         id: "gram_apres_avoir_etre",
-        // Cherche "avoir/être" suivi d'un mot se terminant par "er" (infinitif)
-        regex: /\b(après avoir|après être) ([a-zA-ZÀ-ÿ]+er)\b/gi, 
+        // CORRECTION : On remplace le \b final par (?![a-zA-ZÀ-ÿ]) pour gérer les accents
+        regex: /\b(après avoir|après être)\s+([a-zA-ZÀ-ÿ]+er)(?![a-zA-ZÀ-ÿ])/gi, 
         message: "Après 'avoir' ou 'être', le verbe se met au participe passé (-é, -i, -u), pas à l'infinitif (-er).",
         type: "Grammaire"
     },
     {
         id: "gram_sans_infinitif",
-        // Cherche une préposition suivie d'un mot se terminant par "é" (participe)
-        regex: /\b(sans|pour|afin de|avant de) ([a-zA-ZÀ-ÿ]+é)\b/gi, 
+        // CORRECTION ICI AUSSI
+        regex: /\b(sans|pour|afin de|avant de)\s+([a-zA-ZÀ-ÿ]+é)(?![a-zA-ZÀ-ÿ])/gi, 
         message: "Après une préposition (sans, pour, de...), le verbe se met à l'infinitif (-er).",
         type: "Grammaire"
     },
