@@ -33,6 +33,31 @@ const grammarRules = [
         message: "Les points de suspension vont par trois (...).",
         type: "Typographie"
     },
+    // --- 1.5. TYPOGRAPHIE AVANCÉE ---
+    {
+        id: "typo_guillemets_ouverts",
+        regex: /«([a-zA-ZÀ-ÿ])/g, 
+        message: "Il faut une espace insécable après un guillemet ouvrant («).",
+        type: "Typographie"
+    },
+    {
+        id: "typo_guillemets_fermes",
+        regex: /([a-zA-ZÀ-ÿ\.?!])»/g, 
+        message: "Il faut une espace insécable avant un guillemet fermant (»).",
+        type: "Typographie"
+    },
+    {
+        id: "typo_espace_apostrophe",
+        regex: /\s'/g, 
+        message: "Il ne faut pas d'espace avant une apostrophe.",
+        type: "Typographie"
+    },
+    {
+        id: "typo_espace_apres_apostrophe",
+        regex: /'\s/g, 
+        message: "Il ne faut pas d'espace après une apostrophe.",
+        type: "Typographie"
+    },
 
     // --- 2. CONFUSIONS COURANTES (Homophones) ---
     {
@@ -64,6 +89,37 @@ const grammarRules = [
         id: "gram_son_sont",
         regex: /\b(ils son|elles son)\b/gi, 
         message: "Il s'agit du verbe être : « sont ».",
+        type: "Grammaire"
+    },
+    // --- 2.5. CONFUSIONS COURANTES ET ORTHOGRAPHE ---
+    {
+        id: "gram_sa_va",
+        regex: /\b(sa va|sa marche|sa fonctionne)\b/gi, 
+        message: "Il faut utiliser le pronom démonstratif « ça » (avec une cédille).",
+        type: "Grammaire"
+    },
+    {
+        id: "gram_quand_quant",
+        regex: /\b(quand a|quand à|quand au|quand aux)\b/gi, 
+        message: "Lorsqu'on peut remplacer par 'en ce qui concerne', on écrit « quant » (avec un t).",
+        type: "Grammaire"
+    },
+    {
+        id: "gram_un_peut",
+        regex: /\b(un peut)\b/gi, 
+        message: "Le nom ou l'adverbe s'écrit « peu » (avec un t, c'est le verbe pouvoir).",
+        type: "Grammaire"
+    },
+    {
+        id: "gram_a_t_il",
+        regex: /\b(a t'il|a-t'il|a t il)\b/gi, 
+        message: "La forme correcte est « a-t-il » (avec des traits d'union, pas d'apostrophe).",
+        type: "Typographie/Grammaire"
+    },
+    {
+        id: "gram_ces_ses",
+        regex: /\b(c'est affaires|c'est mots|c'est choses)\b/gi, 
+        message: "Ne pas confondre 'c'est' (cela est) avec le démonstratif 'ces' ou le possessif 'ses'.",
         type: "Grammaire"
     },
 
@@ -108,6 +164,31 @@ const grammarRules = [
         message: "Le contraire de la raison est le « tort » (avec un 't'). Le « tord » est le verbe tordre.",
         type: "Grammaire"
     },
+    // --- 4.5. EXPRESSIONS FIGÉES (Niveau supérieur) ---
+    {
+        id: "exp_comme_meme",
+        regex: /\b(comme même)\b/gi, 
+        message: "L'expression correcte est « quand même ».",
+        type: "Orthographe"
+    },
+    {
+        id: "exp_pallier_a",
+        regex: /\b(pallier à|palliant à)\b/gi, 
+        message: "Le verbe 'pallier' est transitif direct : on pallie quelque chose, on ne pallie pas 'à' quelque chose.",
+        type: "Grammaire"
+    },
+    {
+        id: "exp_en_terme_de",
+        regex: /\b(en terme de)\b/gi, 
+        message: "L'expression s'écrit toujours au pluriel : « en termes de ».",
+        type: "Orthographe"
+    },
+    {
+        id: "exp_a_l_attention_de",
+        regex: /\b(à l'intention de (Monsieur|Madame|M\.|Mme|la direction))\b/gi, 
+        message: "En haut d'un courrier/mail, on écrit « à l'attention de » (pour attirer l'attention). 'À l'intention de' signifie 'pour faire plaisir à'.",
+        type: "Vocabulaire"
+    },
 
     // --- 5. PLÉONASMES ET MALADRESSES (Style) ---
     {
@@ -127,6 +208,25 @@ const grammarRules = [
         regex: /\b(monter en haut|descendre en bas)\b/gi, 
         message: "C'est un pléonasme. Le verbe se suffit à lui-même.",
         type: "Style"
+    },
+    // --- 5.5. PLÉONASMES SUPPLÉMENTAIRES ---
+    {
+        id: "style_pleonasme_reserver",
+        regex: /\b(réserver à l'avance|réservé à l'avance)\b/gi, 
+        message: "C'est un pléonasme. Une réservation se fait toujours à l'avance. « Réserver » suffit.",
+        type: "Style"
+    },
+    {
+        id: "style_pleonasme_collaborer",
+        regex: /\b(collaborer ensemble)\b/gi, 
+        message: "C'est un pléonasme. « Collaborer » signifie déjà travailler ensemble.",
+        type: "Style"
+    },
+    {
+        id: "style_pleonasme_ajouter",
+        regex: /\b(ajouter en plus)\b/gi, 
+        message: "C'est un pléonasme. « Ajouter » suffit.",
+        type: "Style"
     }
 ];
 
@@ -135,5 +235,7 @@ const grammarRules = [
 const dictionnairePersonnel = new Set([
     "bdd", "api", "pdf", "docx", "appli", "github", "rh", "manager", "feedback", 
     "excel", "startup", "web", "email", "mail", "newsletter", "workflow", "process",
-    "saas", "cloud", "ui", "ux", "frontend", "backend" // J'ai ajouté un peu de vocabulaire tech classique
+    "saas", "cloud", "ui", "ux", "frontend", "backend", "dashboard", "deadline", "debug", 
+    "roadmap", "freelance", "sprint", "agile", "scrum", "lead", "onboarding", "call", "meeting", 
+    "brainstorming", "brief", "débrief", "manager", "management", "open-source", "plugin", "setup" // J'ai ajouté un peu de vocabulaire tech classique
 ]);
