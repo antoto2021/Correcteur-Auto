@@ -17,7 +17,9 @@ const progressText = document.getElementById('progress-text');
 const timeEstimate = document.getElementById('time-estimate');
 const resultsSection = document.getElementById('results-section');
 const errorList = document.getElementById('error-list');
-const errorCountEl = document.getElementById('error-count');
+const globalScoreEl = document.getElementById('global-score');
+const orthoCountEl = document.getElementById('ortho-count');
+const gramCountEl = document.getElementById('gram-count');
 const wordCountEl = document.getElementById('word-count');
 const resetBtn = document.getElementById('reset-btn');
 
@@ -192,35 +194,75 @@ checkerWorker.onmessage = function(e) {
     }
 };
 
+// === FONCTION UTILITAIRE POUR ÉVITER LES BUGS D'AFFICHAGE ===
+// Protège les caractères spéciaux (comme les chevrons < >) pour ne pas casser l'HTML
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
+}
+
+// Protège le mot recherché pour qu'il soit bien interprété par la Regex de surlignage
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function displayResults(errors, totalWords) {
-    wordCountEl.textContent = totalWords;
-    errorCountEl.textContent = errors.length;
+    wordCountEl.textContent = `${totalWords} mots analysés`;
+    
+    // --- CALCUL DES SCORES ---
+    const orthoErrors = errors.filter(e => e.type === "Orthographe").length;
+    const gramErrors = errors.length - orthoErrors; // Tout le reste (Grammaire, Typo, Style)
+    
+    // Le score global est un pourcentage de "mots corrects"
+    let noteGlobale = 100;
+    if (totalWords > 0) {
+        // Formule : on retire les fautes du total, et on calcule le pourcentage
+        noteGlobale = Math.max(0, Math.round(((totalWords - errors.length) / totalWords) * 100));
+    }
+
+    // Affichage des compteurs
+    orthoCountEl.textContent = orthoErrors;
+    gramCountEl.textContent = gramErrors;
+    globalScoreEl.textContent = `${noteGlobale}%`;
+
+    // Couleur dynamique du score global
+    globalScoreEl.className = ""; // Reset
+    if (noteGlobale >= 95) globalScoreEl.classList.add('score-success');
+    else if (noteGlobale >= 80) globalScoreEl.classList.add('score-warning');
+    else globalScoreEl.classList.add('score-danger');
+
+    // --- AFFICHAGE DES ERREURS ---
+    errorList.innerHTML = ""; // On vide la liste
+    
     if (errors.length === 0) {
-        errorList.innerHTML = "<p>Aucune faute détectée ! 🎉</p>";
+        errorList.innerHTML = "<p style='text-align:center; padding: 20px;'>Aucune faute détectée ! Votre texte est impeccable. 🎉</p>";
         return;
     }
-    
-    // On vide la liste avant de la remplir
-    errorList.innerHTML = "";
     
     errors.forEach(err => {
         const div = document.createElement('div');
         div.className = 'error-item';
         
-        // On donne une couleur selon le type d'erreur pour aider l'utilisateur
         let typeColor = "#6B7280"; // Gris par défaut (Orthographe)
         if (err.type === "Typographie") typeColor = "#3B82F6"; // Bleu
         if (err.type === "Grammaire") typeColor = "#F59E0B"; // Orange
+        if (err.type === "Style") typeColor = "#8B5CF6"; // Violet
+
+        // SURLIGNAGE : On sécurise le paragraphe, puis on surligne le mot fautif
+        const safeContext = escapeHTML(err.context);
+        const searchRegex = new RegExp(`(${escapeRegExp(err.word)})`, 'g'); // Trouve toutes les occurrences du mot dans le paragraphe
+        const highlightedContext = safeContext.replace(searchRegex, `<span class="highlight-error-word">$1</span>`);
 
         div.innerHTML = `
             <div style="margin-bottom: 5px;">
                 <span style="background-color: ${typeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px;">
                     ${err.type}
                 </span>
-                <strong>${err.word}</strong>
+                <strong style="font-size: 16px;">${escapeHTML(err.word)}</strong>
             </div>
-            <div class="error-context">...${err.context}...</div>
-            <div style="font-size: 12px; color: #4B5563; margin-top: 4px;">
+            
+            <div class="error-context">${highlightedContext}</div>
+            
+            <div style="font-size: 13px; color: #4B5563; margin-top: 6px;">
                 💡 <em>${err.message}</em>
             </div>
         `;
