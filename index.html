@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correcteur Documentaire V1</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.5.1/mammoth.browser.min.js"></script>
+</head>
+<body>
+
+    <main class="container">
+        <header>
+            <h1>Vérificateur Local</h1>
+            <p>Importez votre document (TXT, PDF, DOCX). L'analyse se fait 100% sur votre machine.</p>
+        </header>
+
+        <section id="drop-zone" class="drop-zone">
+            <div class="drop-content">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <p>Glissez-déposez un fichier ici ou <span class="browse-link">parcourez vos dossiers</span></p>
+                <input type="file" id="file-input" accept=".txt, .pdf, .docx" hidden>
+            </div>
+        </section>
+
+        <section id="progress-section" class="hidden">
+            <div class="progress-header">
+                <span id="progress-text">Analyse en cours...</span>
+                <span id="progress-percentage">0%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <p id="time-estimate" class="time-estimate">Temps restant estimé : calcul...</p>
+        </section>
+
+        <section id="results-section" class="hidden">
+            <h2>Rapport d'analyse</h2>
+            <div class="score-cards">
+                <div class="card">
+                    <h3>Fautes potentielles</h3>
+                    <p id="error-count" class="highlight-error">0</p>
+                </div>
+                <div class="card">
+                    <h3>Mots analysés</h3>
+                    <p id="word-count">0</p>
+                </div>
+            </div>
+            <div id="error-list" class="error-list">
+                </div>
+            <button id="reset-btn" class="btn-secondary">Analyser un autre document</button>
+        </section>
+    </main>
+
+    <script src="main.js"></script>
+</body>
+</html>
