@@ -46,16 +46,25 @@
 
         <section id="results-section" class="hidden">
             <h2>Rapport d'analyse</h2>
+            
             <div class="score-cards">
-                <div class="card">
-                    <h3>Fautes potentielles</h3>
-                    <p id="error-count" class="highlight-error">0</p>
+                <div class="card score-global-card">
+                    <h3>Score Global</h3>
+                    <p id="global-score" class="score-success">100%</p>
+                    <span id="word-count" style="font-size: 10px; color: gray;">0 mots analysés</span>
                 </div>
                 <div class="card">
-                    <h3>Mots analysés</h3>
-                    <p id="word-count">0</p>
+                    <h3>Orthographe</h3>
+                    <p id="ortho-count" class="highlight-error">0</p>
+                    <span style="font-size: 10px; color: gray;">fautes</span>
+                </div>
+                <div class="card">
+                    <h3>Grammaire & Typo</h3>
+                    <p id="gram-count" style="color: #F59E0B;">0</p>
+                    <span style="font-size: 10px; color: gray;">fautes</span>
                 </div>
             </div>
+
             <div id="error-list" class="error-list">
                 </div>
             <button id="reset-btn" class="btn-secondary">Analyser un autre document</button>
