@@ -1,15 +1,19 @@
 // === CONFIGURATION GITHUB ===
-const GITHUB_USER = "antoto2021"; // EX: "octocat"
-const GITHUB_REPO = "Correcteur-Auto";           // EX: "correcteur-local"
+const GITHUB_USER = "antoto2021"; 
+const GITHUB_REPO = "Correcteur-Auto";           
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/commits/main`;
 
 // === ÉLÉMENTS DU DOM ===
+const inputSection = document.getElementById('input-section'); // La nouvelle section globale
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
+const textInput = document.getElementById('text-input'); // La nouvelle zone de texte
+const analyzeTextBtn = document.getElementById('analyze-text-btn'); // Le nouveau bouton
+
 const progressSection = document.getElementById('progress-section');
 const progressBar = document.getElementById('progress-bar');
 const progressPercentage = document.getElementById('progress-percentage');
-const progressText = document.getElementById('progress-text'); // Ajout de la référence au texte
+const progressText = document.getElementById('progress-text'); 
 const timeEstimate = document.getElementById('time-estimate');
 const resultsSection = document.getElementById('results-section');
 const errorList = document.getElementById('error-list');
@@ -17,7 +21,7 @@ const errorCountEl = document.getElementById('error-count');
 const wordCountEl = document.getElementById('word-count');
 const resetBtn = document.getElementById('reset-btn');
 
-// === ÉLÉMENTS VERSIONING ET BOUTONS ===
+// === ÉLÉMENTS VERSIONING ===
 const infoBtnOpen = document.getElementById('info-btn-open');
 const versionPanelFull = document.getElementById('version-panel-full');
 const localVersionHashEl = document.getElementById('local-version-hash');
@@ -27,7 +31,7 @@ const versionVerifyBtn = document.getElementById('version-verify-btn');
 const appRefreshBtnContainer = document.getElementById('app-refresh-btn');
 
 const checkerWorker = new Worker('worker.js');
-let latestGithubHash = null; // Stocke le hash en attente d'installation
+let latestGithubHash = null; 
 
 // === GESTION DU VERSIONING ===
 infoBtnOpen.addEventListener('click', () => {
@@ -44,7 +48,7 @@ window.addEventListener('click', (e) => {
 async function checkVersion() {
     appRefreshBtnContainer.classList.add('hidden');
     versionVerifyBtn.textContent = "🔄 Vérification...";
-    versionVerifyBtn.onclick = checkVersion; // Par défaut, le clic revérifie
+    versionVerifyBtn.onclick = checkVersion; 
     
     try {
         const response = await fetch(GITHUB_API_URL);
@@ -65,12 +69,10 @@ async function checkVersion() {
         }
 
         if (!localHash || localHash !== latestGithubHash) {
-            // NOUVELLE VERSION DISPO : On change le comportement du bouton
             versionVerifyBtn.textContent = "🔄 Nouvelle version ! Installer maintenant ?";
             versionVerifyBtn.classList.replace('btn-primary', 'btn-secondary');
             appRefreshBtnContainer.classList.remove('hidden'); 
             
-            // CORRECTION : On sauvegarde le hash AU CLIC
             const installUpdate = () => {
                 localStorage.setItem('app_version_hash', latestGithubHash);
                 window.location.reload(true);
@@ -79,7 +81,6 @@ async function checkVersion() {
             appRefreshBtnContainer.onclick = installUpdate;
 
         } else {
-            // À JOUR
             versionVerifyBtn.textContent = "🔄 À jour. Vérifier maintenant";
             versionVerifyBtn.classList.replace('btn-secondary', 'btn-primary');
         }
@@ -88,7 +89,24 @@ async function checkVersion() {
     }
 }
 
-// === GESTION DE L'INTERFACE (DRAG & DROP) ===
+// === GESTION DE L'INTERFACE (DRAG & DROP ET TEXTE) ===
+
+// 1. Analyse depuis la zone de texte
+analyzeTextBtn.addEventListener('click', () => {
+    const text = textInput.value.trim();
+    if (text) {
+        inputSection.classList.add('hidden');
+        progressSection.classList.remove('hidden');
+        progressBar.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        progressText.textContent = 'Préparation du texte...';
+        startAnalysis(text);
+    } else {
+        alert("Veuillez entrer du texte à analyser.");
+    }
+});
+
+// 2. Analyse depuis un fichier
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -101,16 +119,18 @@ fileInput.addEventListener('change', (e) => {
     if (e.target.files.length) handleFile(e.target.files[0]);
 });
 
+// Bouton de réinitialisation
 resetBtn.addEventListener('click', () => {
     resultsSection.classList.add('hidden');
-    dropZone.classList.remove('hidden');
+    inputSection.classList.remove('hidden'); // On réaffiche la section globale
     fileInput.value = "";
+    textInput.value = ""; // On vide la zone de texte
     errorList.innerHTML = "";
 });
 
 // === LECTURE DES FICHIERS ===
 async function handleFile(file) {
-    dropZone.classList.add('hidden');
+    inputSection.classList.add('hidden'); // On cache toute la section d'entrée
     progressSection.classList.remove('hidden');
     progressBar.style.width = '0%';
     progressPercentage.textContent = '0%';
@@ -156,10 +176,10 @@ checkerWorker.onmessage = function(e) {
     if (type === 'PROGRESS') {
         progressBar.style.width = `${progress}%`;
         progressPercentage.textContent = `${Math.round(progress)}%`;
-        if (text) progressText.textContent = text; // Met à jour le texte dynamiquement
+        if (text) progressText.textContent = text; 
         
         const elapsed = (Date.now() - startTime) / 1000;
-        if (progress > 5 && progress < 100) { // On commence l'estimation après un peu de chargement
+        if (progress > 5 && progress < 100) { 
             const totalEstimated = (elapsed / progress) * 100;
             const remaining = Math.round(totalEstimated - elapsed);
             timeEstimate.textContent = `Temps restant estimé : ${remaining} sec`;
