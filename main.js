@@ -16,49 +16,88 @@ const errorCountEl = document.getElementById('error-count');
 const wordCountEl = document.getElementById('word-count');
 const resetBtn = document.getElementById('reset-btn');
 
-// === ÉLÉMENTS VERSIONING ===
-const infoBtn = document.getElementById('info-btn');
-const versionInfo = document.getElementById('version-info');
-const updateBtn = document.getElementById('update-btn');
+// === ÉLÉMENTS VERSIONING ET NOUVEAUX BOUTONS ===
+const infoBtnOpen = document.getElementById('info-btn-open');
+const versionPanelFull = document.getElementById('version-panel-full');
+const localVersionHashEl = document.getElementById('local-version-hash');
+const localUpdateTimeEl = document.getElementById('local-update-time');
+const githubVersionHashEl = document.getElementById('github-version-hash');
+const versionVerifyBtn = document.getElementById('version-verify-btn');
+const appRefreshBtnContainer = document.getElementById('app-refresh-btn');
 
 // Initialisation du Web Worker
 const checkerWorker = new Worker('worker.js');
 
-// === GESTION DU VERSIONING ===
+// === GESTION DU VERSIONING ET DES BOUTONS ===
+
+// Ouvre/Ferme le panneau d'info
+infoBtnOpen.addEventListener('click', () => {
+    versionPanelFull.classList.toggle('hidden');
+    if (!versionPanelFull.classList.contains('hidden')) {
+        checkVersion();
+    }
+});
+
+// Ferme le panneau si on clique en dehors
+window.addEventListener('click', (e) => {
+    if (e.target !== versionPanelFull && !versionPanelFull.contains(e.target) && e.target !== infoBtnOpen) {
+        versionPanelFull.classList.add('hidden');
+    }
+});
+
 async function checkVersion() {
-    versionInfo.classList.remove('hidden');
-    versionInfo.textContent = "Vérification...";
+    // Par défaut, on cache le bouton de rafraîchissement
+    appRefreshBtnContainer.classList.add('hidden');
+    versionVerifyBtn.textContent = "🔄 Vérification...";
     
     try {
         const response = await fetch(GITHUB_API_URL);
         if (!response.ok) throw new Error("Dépôt introuvable");
         const data = await response.json();
         
-        const githubHash = data.sha.substring(0, 7); // On prend les 7 premiers caractères
+        const githubHashFull = data.sha;
+        const githubHashShort = githubHashFull.substring(0, 7); 
         const localHash = localStorage.getItem('app_version_hash');
 
+        // Met à jour les éléments du panneau d'info
+        githubVersionHashEl.textContent = `Commit: ${githubHashShort}`;
         if (!localHash) {
-            localStorage.setItem('app_version_hash', githubHash);
-            versionInfo.textContent = `Version : ${githubHash}`;
-        } else if (localHash !== githubHash) {
-            versionInfo.textContent = `Nouvelle version dispo (${githubHash})`;
-            updateBtn.classList.remove('hidden');
+            localVersionHashEl.textContent = "Non installée";
+            localUpdateTimeEl.textContent = "Première utilisation";
         } else {
-            versionInfo.textContent = `À jour (${localHash})`;
-            updateBtn.classList.add('hidden');
+            localVersionHashEl.textContent = localHash;
+            localUpdateTimeEl.textContent = "Mise à jour : installée"; // Pour l'image, on garde simple
+        }
+
+        if (!localHash || localHash !== githubHashShort) {
+            // Mise à jour disponible
+            versionVerifyBtn.textContent = "🔄 Nouvelle version ! Installer maintenant ?";
+            versionVerifyBtn.classList.remove('btn-primary');
+            versionVerifyBtn.classList.add('btn-secondary'); // Change de style
+            appRefreshBtnContainer.classList.remove('hidden'); // Montre le bouton autonome
+        } else {
+            // À jour
+            versionVerifyBtn.textContent = "🔄 À jour. Vérifier maintenant";
+            versionVerifyBtn.classList.remove('btn-secondary');
+            versionVerifyBtn.classList.add('btn-primary');
+            appRefreshBtnContainer.classList.add('hidden');
         }
     } catch (error) {
-        versionInfo.textContent = "Erreur de vérification";
+        versionVerifyBtn.textContent = "❌ Erreur de vérification";
     }
 }
 
-infoBtn.addEventListener('click', checkVersion);
+// Le gros bouton dans le panneau d'info (Image 1)
+versionVerifyBtn.addEventListener('click', checkVersion);
 
-updateBtn.addEventListener('click', () => {
-    // Supprime le hash local et force le rechargement pour vider le cache
+// Le bouton rafraîchir autonome (Image 2)
+appRefreshBtnContainer.addEventListener('click', () => {
+    // Force la mise à jour : on récupère le nouveau hash, on le stocke et on recharge
+    // Note: Pour une vraie V2, il faudrait un mécanisme d'installation
     localStorage.removeItem('app_version_hash');
     window.location.reload(true); 
 });
+
 
 // === GESTION DE L'INTERFACE (DRAG & DROP) ===
 dropZone.addEventListener('click', () => fileInput.click());
