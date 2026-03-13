@@ -415,3 +415,44 @@ header p {
 .btn-primary-large:hover {
     background-color: var(--primary-hover);
 }
+
+/* === NOUVEAU STYLE POUR LES SCORES ET LE SURLIGNAGE === */
+
+.score-global-card {
+    border: 2px solid var(--success-color) !important;
+    background-color: #ECFDF5 !important;
+}
+
+.score-success {
+    color: var(--success-color) !important;
+}
+
+.score-warning {
+    color: #F59E0B !important;
+}
+
+.score-danger {
+    color: var(--error-color) !important;
+}
+
+/* Le paragraphe contenant la faute */
+.error-context {
+    background-color: #F9FAFB;
+    padding: 12px;
+    border-radius: 6px;
+    color: var(--text-main);
+    line-height: 1.6;
+    border-left: 4px solid var(--border-color);
+    margin: 8px 0;
+    font-size: 14px;
+    font-family: Georgia, serif; /* Donne un effet "document" */
+}
+
+/* Le surlignage de la faute précise */
+.highlight-error-word {
+    background-color: #FEE2E2;
+    border-bottom: 2px solid var(--error-color);
+    font-weight: 600;
+    padding: 0 2px;
+    border-radius: 3px;
+}
