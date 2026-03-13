@@ -87,21 +87,40 @@ async function analyserTexte(text) {
         const chunk = motsBruts.slice(i, i + chunkSize);
         
         chunk.forEach((motBrut, index) => {
-            const motPropre = motBrut.replace(/[.,!?()";:«»]/g, '').toLowerCase();
+            // 1. Nettoyage des extrémités (enlève les crochets, guillemets, virgules accrochés au début ou à la fin du mot)
+            let motPropre = motBrut.replace(/^[.,!?()\[\]{};:«»"“”\-_]+|[.,!?()\[\]{};:«»"“”\-_]+$/g, '');
             
-            if (motPropre.length > 1 && !checker.check(motPropre) && isNaN(motPropre)) {
-                const globalIndex = i + index;
-                const contextStart = Math.max(0, globalIndex - 3);
-                const contextEnd = Math.min(totalWords, globalIndex + 4);
-                const context = motsBruts.slice(contextStart, contextEnd).join(' ');
+            // 2. Gestion de l'apostrophe française (ex: j'ai -> ai, l’idée -> idée)
+            // Prend en charge l'apostrophe droite (') et typographique (’)
+            motPropre = motPropre.replace(/^[ldjmntsctyqu]['’]/i, '');
 
-                errors.push({ word: motBrut, context: context });
+            // Si le mot contient encore des caractères valides et n'est pas un nombre
+            if (motPropre.length > 1 && isNaN(motPropre)) {
+                
+                // 3. Typo.js gère les majuscules. On teste le mot tel quel (pour "Excel"),
+                // puis en minuscules (pour les mots en début de phrase).
+                let estValide = checker.check(motPropre) || checker.check(motPropre.toLowerCase());
+
+                // 4. Gestion des mots composés (ex: procédions-nous)
+                if (!estValide && motPropre.includes('-')) {
+                    const sousMots = motPropre.split('-');
+                    // Le mot composé est valide si tous ses sous-mots le sont
+                    estValide = sousMots.every(sm => sm.length <= 1 || checker.check(sm) || checker.check(sm.toLowerCase()));
+                }
+
+                // Si après tout ça, le mot n'est toujours pas valide, c'est une faute !
+                if (!estValide) {
+                    const globalIndex = i + index;
+                    const contextStart = Math.max(0, globalIndex - 3);
+                    const contextEnd = Math.min(totalWords, globalIndex + 4);
+                    const context = motsBruts.slice(contextStart, contextEnd).join(' ');
+
+                    errors.push({ word: motPropre, context: context }); // On affiche le mot nettoyé
+                }
             }
         });
 
         processedWords += chunk.length;
-        
-        // La jauge commence à 35% (fin du téléchargement) et va jusqu'à 100%
         const progress = 35 + (processedWords / totalWords) * 65; 
         
         self.postMessage({ 
