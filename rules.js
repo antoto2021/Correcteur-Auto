@@ -2,7 +2,6 @@
 
 const grammarRules = [
     // --- 1. TYPOGRAPHIE ---
-[
     {
         id: "typo_espace_double",
         regex: / {2,}/g, // Cherche 2 espaces consécutifs ou plus
