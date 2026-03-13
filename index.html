@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Correcteur Documentaire V1</title>
+    <title>Correcteur Documentaire Local</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -27,7 +27,7 @@
 
         <section id="progress-section" class="hidden">
             <div class="progress-header">
-                <span id="progress-text">Analyse en cours...</span>
+                <span id="progress-text">Initialisation du dictionnaire...</span>
                 <span id="progress-percentage">0%</span>
             </div>
             <div class="progress-bar-container">
@@ -54,13 +54,36 @@
         </section>
     </main>
 
-    <div id="version-panel" class="version-panel">
-        <button id="info-btn" class="icon-btn" title="Vérifier les mises à jour">ℹ️</button>
-        <span id="version-info" class="hidden">Vérification...</span>
-        <button id="update-btn" class="btn-small hidden">🔄 Mettre à jour</button>
+    <div id="version-panel-full" class="version-panel-full hidden">
+        <div class="version-content">
+            <div class="version-col left-col">
+                <h3>INSTALLÉE (LOCAL)</h3>
+                <p id="local-version-hash" class="version-hash">d14e6ec</p>
+                <p id="local-update-time" class="update-time">Mise à jour : calcul...</p>
+            </div>
+            <div class="version-divider"></div>
+            <div class="version-col right-col">
+                <div class="github-header">
+                    <h3>DISPONIBLE (GITHUB)</h3>
+                    <span id="github-status-dot" class="status-dot green-dot"></span>
+                </div>
+                <p id="github-version-hash" class="version-hash github-commit">Commit: d14e6ec</p>
+                <p class="commit-status">Dernier Commit</p>
+            </div>
+        </div>
+        <button id="version-verify-btn" class="btn-primary version-verify-btn">🔄 Vérifier maintenant</button>
     </div>
 
+    <div id="app-refresh-btn" class="refresh-btn-container hidden">
+        <div class="refresh-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="white">
+                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+        </div>
+    </div>
+
+    <button id="info-btn-open" class="info-btn-open" title="Informations de version">ℹ️</button>
+
     <script src="main.js"></script>
-    
 </body>
 </html>
