@@ -26,6 +26,7 @@ body {
     align-items: center;
     min-height: 100vh;
     padding: 20px;
+    position: relative;
 }
 
 .container {
@@ -193,37 +194,153 @@ header p {
     background-color: #F3F4F6;
 }
 
+/* === STYLE DU PANNEAU DE VERSIONING COMPLET (IMAGE 1) === */
+.version-panel-full {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: var(--radius);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 1000;
+}
+
+.version-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.version-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.version-col h3 {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.left-col {
+    color: var(--primary);
+}
+
+.right-col {
+    color: var(--primary);
+}
+
+.version-hash {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.update-time, .commit-status {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.github-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.green-dot {
+    background-color: var(--success-color);
+}
+
+.github-commit {
+    font-weight: 500;
+}
+
+.version-divider {
+    width: 1px;
+    height: 80px;
+    background-color: var(--border-color);
+    margin-top: 10px;
+}
+
+.version-verify-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.version-verify-btn:hover {
+    background-color: var(--primary-hover);
+}
+
+/* === STYLE DU BOUTON RAFRAÎCHIR AUTONOME (IMAGE 2) === */
+.refresh-btn-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 100;
+    cursor: pointer;
+}
+
+.refresh-btn {
+    width: 48px;
+    height: 48px;
+    background-color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.refresh-btn:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+/* Bouton Info pour ouvrir le panneau */
+.info-btn-open {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
 /* Utilitaires */
 .hidden {
     display: none !important;
-}
-
-/* Style du panneau de versioning */
-.version-panel {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: white;
-    padding: 10px 15px;
-    border-radius: 30px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-}
-.icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-}
-.btn-small {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 15px;
-    cursor: pointer;
-    font-weight: bold;
 }
