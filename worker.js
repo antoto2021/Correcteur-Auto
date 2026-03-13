@@ -1,97 +1,115 @@
-// === LE CERVEAU ORTHOGRAPHIQUE LOCAL COMPLET (TYPO.JS + HUNSPELL FR) ===
-// Charge la bibliothèque Typo.js en asynchronisme
 importScripts('https://cdn.jsdelivr.net/npm/typo-js@1.1.0/typo.min.js');
 
-// Instance de Typo.js pour la correction
 let checker = null;
 
-// Fonction asynchrone pour initialiser le dictionnaire
-async function initChecker() {
-    if (checker) return; // Déjà initialisé
-
-    try {
-        // Chargement asynchrone des fichiers dictionnaire (fr_FR) depuis jsDelivr
-        // Les fichiers sont volumineux (plusieurs Mo), c'est pourquoi on le fait dans le worker
-        checker = new Typo("fr_FR", null, null, {
-            platform: "any",
-            loadAsynchronously: true,
-            dictionaryPath: "https://cdn.jsdelivr.net/gh/wooorm/dictionaries@main/dictionaries/fr"
-        });
-        
-        // Attendre que Typo.js confirme que le dictionnaire est chargé
-        return new Promise((resolve) => {
-            checker.loaded = () => resolve();
-        });
-    } catch (error) {
-        console.error("Erreur d'initialisation du dictionnaire : ", error);
+// Fonction pour télécharger un fichier en mesurant la progression octet par octet
+async function fetchWithProgress(url, nomFichier, baseProgress, partDeProgression) {
+    self.postMessage({ type: 'PROGRESS', progress: baseProgress, text: `Connexion pour ${nomFichier}...` });
+    
+    const response = await fetch(url);
+    const contentLength = response.headers.get('content-length');
+    
+    // Si le serveur ne renvoie pas la taille du fichier, on télécharge d'un coup
+    if (!contentLength) {
+        const text = await response.text();
+        self.postMessage({ type: 'PROGRESS', progress: baseProgress + partDeProgression, text: `${nomFichier} téléchargé.` });
+        return text;
     }
+
+    const total = parseInt(contentLength, 10);
+    let loaded = 0;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let text = '';
+
+    // Lecture du flux de données
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        loaded += value.length;
+        text += decoder.decode(value, { stream: true });
+        
+        // Calcul de la progression
+        const percent = (loaded / total) * partDeProgression;
+        const moLoaded = Math.round((loaded / 1024 / 1024) * 10) / 10;
+        
+        self.postMessage({ 
+            type: 'PROGRESS', 
+            progress: baseProgress + percent, 
+            text: `Téléchargement ${nomFichier} (${moLoaded} Mo)...` 
+        });
+    }
+    text += decoder.decode(); // Vide le buffer
+    return text;
 }
 
-// Fonction pour simuler un délai (pour bien voir la jauge de progression tourner)
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function initChecker() {
+    if (checker) return; // Si déjà chargé lors d'une précédente analyse
+
+    const urlAff = "https://cdn.jsdelivr.net/gh/wooorm/dictionaries@main/dictionaries/fr/index.aff";
+    const urlDic = "https://cdn.jsdelivr.net/gh/wooorm/dictionaries@main/dictionaries/fr/index.dic";
+    
+    // Le .aff pèse ~15Ko (on lui donne 5% de la jauge)
+    const affData = await fetchWithProgress(urlAff, "des règles grammaticales", 0, 5);
+    
+    // Le .dic pèse ~4.5Mo (on lui donne 25% de la jauge)
+    const dicData = await fetchWithProgress(urlDic, "du dictionnaire principal", 5, 25);
+
+    self.postMessage({ type: 'PROGRESS', progress: 32, text: 'Construction du moteur (le navigateur va figer quelques secondes)...' });
+    
+    // Petite pause pour laisser le temps à l'interface de s'afficher avant que Typo.js ne gèle le Worker
+    await new Promise(r => setTimeout(r, 150));
+    
+    checker = new Typo("fr_FR", affData, dicData);
+}
 
 self.onmessage = async function(e) {
     if (e.data.type === 'START') {
-        // 1. Initialise le dictionnaire avant tout (seulement la première fois)
-        self.postMessage({ type: 'PROGRESS', progress: 0, text: 'Initialisation du dictionnaire...' });
+        // 1. Initialisation (prend 35% de la jauge globale)
         await initChecker();
         
-        // 2. Démarre l'analyse
-        self.postMessage({ type: 'PROGRESS', progress: 10, text: 'Analyse en cours...' });
-        const text = e.data.payload;
-        await analyserTexte(text);
+        // 2. Analyse (prend les 65% restants)
+        self.postMessage({ type: 'PROGRESS', progress: 35, text: 'Analyse du document en cours...' });
+        await analyserTexte(e.data.payload);
     }
 };
 
 async function analyserTexte(text) {
-    // Nettoyage basique et découpage en mots
     const motsBruts = text.split(/\s+/);
     const totalWords = motsBruts.length;
     let errors = [];
     
-    // On définit la taille des blocs (Chunks) pour mettre à jour la jauge
     const chunkSize = 500; 
     let processedWords = 0;
 
     for (let i = 0; i < totalWords; i += chunkSize) {
         const chunk = motsBruts.slice(i, i + chunkSize);
         
-        // Analyse du bloc
         chunk.forEach((motBrut, index) => {
-            // Retire la ponctuation
-            const motPropre = motBrut.replace(/[.,!?()";:]/g, '').toLowerCase();
+            const motPropre = motBrut.replace(/[.,!?()";:«»]/g, '').toLowerCase();
             
-            // Si le mot n'est pas vide, n'est pas un nombre, et que Typo.js ne le valide pas
             if (motPropre.length > 1 && !checker.check(motPropre) && isNaN(motPropre)) {
-                
-                // On récupère le contexte (3 mots avant, 3 mots après)
                 const globalIndex = i + index;
                 const contextStart = Math.max(0, globalIndex - 3);
                 const contextEnd = Math.min(totalWords, globalIndex + 4);
                 const context = motsBruts.slice(contextStart, contextEnd).join(' ');
 
-                errors.push({
-                    word: motBrut,
-                    context: context
-                });
+                errors.push({ word: motBrut, context: context });
             }
         });
 
         processedWords += chunk.length;
-        // On compense le début d'initialisation pour la progression
-        const progress = 10 + (processedWords / totalWords) * 90; 
         
-        // Simule un traitement pour que vous voyiez la jauge (enlevez pour vitesse réelle)
-        // await sleep(50); 
-
-        // Envoie la progression au fichier principal
-        self.postMessage({ type: 'PROGRESS', progress: progress });
+        // La jauge commence à 35% (fin du téléchargement) et va jusqu'à 100%
+        const progress = 35 + (processedWords / totalWords) * 65; 
+        
+        self.postMessage({ 
+            type: 'PROGRESS', 
+            progress: progress, 
+            text: `Vérification : ${processedWords} mots sur ${totalWords}...` 
+        });
     }
 
-    // Analyse terminée
-    self.postMessage({ 
-        type: 'DONE', 
-        errors: errors, 
-        totalWords: totalWords 
-    });
+    self.postMessage({ type: 'DONE', errors: errors, totalWords: totalWords });
 }
