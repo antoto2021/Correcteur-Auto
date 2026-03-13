@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Correcteur Documentaire Local V1</title>
+    <title>Correcteur Documentaire Local</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -14,14 +14,22 @@
     <main class="container">
         <header>
             <h1>Vérificateur Local</h1>
-            <p>Importez votre document (TXT, PDF, DOCX). L'analyse se fait 100% sur votre machine.</p>
+            <p>Importez un document ou collez votre texte. L'analyse se fait 100% sur votre machine.</p>
         </header>
 
-        <section id="drop-zone" class="drop-zone">
-            <div class="drop-content">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                <p>Glissez-déposez un fichier ici ou <span class="browse-link">parcourez vos dossiers</span></p>
-                <input type="file" id="file-input" accept=".txt, .pdf, .docx" hidden>
+        <section id="input-section">
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <p>Glissez-déposez un fichier ici ou <span class="browse-link">parcourez vos dossiers</span></p>
+                    <input type="file" id="file-input" accept=".txt, .pdf, .docx" hidden>
+                </div>
+            </div>
+
+            <div class="text-input-container">
+                <div class="divider"><span>OU</span></div>
+                <textarea id="text-input" placeholder="Collez ou tapez votre texte à vérifier ici..."></textarea>
+                <button id="analyze-text-btn" class="btn-primary-large">Analyser ce texte</button>
             </div>
         </section>
 
@@ -58,16 +66,15 @@
         <div class="version-content">
             <div class="version-col left-col">
                 <h3>INSTALLÉE (LOCAL)</h3>
-                <p id="local-version-hash" class="version-hash">d14e6ec</p>
-                <p id="local-update-time" class="update-time">Mise à jour : calcul...</p>
+                <p id="local-version-hash" class="version-hash">---</p> 
+                <p id="local-update-time" class="update-time">Vérification...</p>
             </div>
             <div class="version-divider"></div>
             <div class="version-col right-col">
                 <div class="github-header">
                     <h3>DISPONIBLE (GITHUB)</h3>
-                    <span id="github-status-dot" class="status-dot green-dot"></span>
-                </div>
-                <p id="github-version-hash" class="version-hash github-commit">Commit: d14e6ec</p>
+                    <span id="github-status-dot" class="status-dot"></span> </div>
+                <p id="github-version-hash" class="version-hash github-commit">Commit: ---</p> 
                 <p class="commit-status">Dernier Commit</p>
             </div>
         </div>
