@@ -9,6 +9,7 @@ const fileInput = document.getElementById('file-input');
 const progressSection = document.getElementById('progress-section');
 const progressBar = document.getElementById('progress-bar');
 const progressPercentage = document.getElementById('progress-percentage');
+const progressText = document.getElementById('progress-text'); // Ajout de la référence au texte
 const timeEstimate = document.getElementById('time-estimate');
 const resultsSection = document.getElementById('results-section');
 const errorList = document.getElementById('error-list');
@@ -16,7 +17,7 @@ const errorCountEl = document.getElementById('error-count');
 const wordCountEl = document.getElementById('word-count');
 const resetBtn = document.getElementById('reset-btn');
 
-// === ÉLÉMENTS VERSIONING ET NOUVEAUX BOUTONS ===
+// === ÉLÉMENTS VERSIONING ET BOUTONS ===
 const infoBtnOpen = document.getElementById('info-btn-open');
 const versionPanelFull = document.getElementById('version-panel-full');
 const localVersionHashEl = document.getElementById('local-version-hash');
@@ -25,20 +26,15 @@ const githubVersionHashEl = document.getElementById('github-version-hash');
 const versionVerifyBtn = document.getElementById('version-verify-btn');
 const appRefreshBtnContainer = document.getElementById('app-refresh-btn');
 
-// Initialisation du Web Worker
 const checkerWorker = new Worker('worker.js');
+let latestGithubHash = null; // Stocke le hash en attente d'installation
 
-// === GESTION DU VERSIONING ET DES BOUTONS ===
-
-// Ouvre/Ferme le panneau d'info
+// === GESTION DU VERSIONING ===
 infoBtnOpen.addEventListener('click', () => {
     versionPanelFull.classList.toggle('hidden');
-    if (!versionPanelFull.classList.contains('hidden')) {
-        checkVersion();
-    }
+    if (!versionPanelFull.classList.contains('hidden')) checkVersion();
 });
 
-// Ferme le panneau si on clique en dehors
 window.addEventListener('click', (e) => {
     if (e.target !== versionPanelFull && !versionPanelFull.contains(e.target) && e.target !== infoBtnOpen) {
         versionPanelFull.classList.add('hidden');
@@ -46,75 +42,61 @@ window.addEventListener('click', (e) => {
 });
 
 async function checkVersion() {
-    // Par défaut, on cache le bouton de rafraîchissement
     appRefreshBtnContainer.classList.add('hidden');
     versionVerifyBtn.textContent = "🔄 Vérification...";
+    versionVerifyBtn.onclick = checkVersion; // Par défaut, le clic revérifie
     
     try {
         const response = await fetch(GITHUB_API_URL);
         if (!response.ok) throw new Error("Dépôt introuvable");
         const data = await response.json();
         
-        const githubHashFull = data.sha;
-        const githubHashShort = githubHashFull.substring(0, 7); 
+        latestGithubHash = data.sha.substring(0, 7); 
         const localHash = localStorage.getItem('app_version_hash');
 
-        // Met à jour les éléments du panneau d'info
-        githubVersionHashEl.textContent = `Commit: ${githubHashShort}`;
+        githubVersionHashEl.textContent = `Commit: ${latestGithubHash}`;
+        
         if (!localHash) {
             localVersionHashEl.textContent = "Non installée";
             localUpdateTimeEl.textContent = "Première utilisation";
         } else {
             localVersionHashEl.textContent = localHash;
-            localUpdateTimeEl.textContent = "Mise à jour : installée"; // Pour l'image, on garde simple
+            localUpdateTimeEl.textContent = "Mise à jour : installée";
         }
 
-        if (!localHash || localHash !== githubHashShort) {
-            // Mise à jour disponible
+        if (!localHash || localHash !== latestGithubHash) {
+            // NOUVELLE VERSION DISPO : On change le comportement du bouton
             versionVerifyBtn.textContent = "🔄 Nouvelle version ! Installer maintenant ?";
-            versionVerifyBtn.classList.remove('btn-primary');
-            versionVerifyBtn.classList.add('btn-secondary'); // Change de style
-            appRefreshBtnContainer.classList.remove('hidden'); // Montre le bouton autonome
+            versionVerifyBtn.classList.replace('btn-primary', 'btn-secondary');
+            appRefreshBtnContainer.classList.remove('hidden'); 
+            
+            // CORRECTION : On sauvegarde le hash AU CLIC
+            const installUpdate = () => {
+                localStorage.setItem('app_version_hash', latestGithubHash);
+                window.location.reload(true);
+            };
+            versionVerifyBtn.onclick = installUpdate;
+            appRefreshBtnContainer.onclick = installUpdate;
+
         } else {
-            // À jour
+            // À JOUR
             versionVerifyBtn.textContent = "🔄 À jour. Vérifier maintenant";
-            versionVerifyBtn.classList.remove('btn-secondary');
-            versionVerifyBtn.classList.add('btn-primary');
-            appRefreshBtnContainer.classList.add('hidden');
+            versionVerifyBtn.classList.replace('btn-secondary', 'btn-primary');
         }
     } catch (error) {
         versionVerifyBtn.textContent = "❌ Erreur de vérification";
     }
 }
 
-// Le gros bouton dans le panneau d'info (Image 1)
-versionVerifyBtn.addEventListener('click', checkVersion);
-
-// Le bouton rafraîchir autonome (Image 2)
-appRefreshBtnContainer.addEventListener('click', () => {
-    // Force la mise à jour : on récupère le nouveau hash, on le stocke et on recharge
-    // Note: Pour une vraie V2, il faudrait un mécanisme d'installation
-    localStorage.removeItem('app_version_hash');
-    window.location.reload(true); 
-});
-
-
 // === GESTION DE L'INTERFACE (DRAG & DROP) ===
 dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-});
-
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('dragover');
     if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
 });
-
 fileInput.addEventListener('change', (e) => {
     if (e.target.files.length) handleFile(e.target.files[0]);
 });
@@ -132,9 +114,9 @@ async function handleFile(file) {
     progressSection.classList.remove('hidden');
     progressBar.style.width = '0%';
     progressPercentage.textContent = '0%';
+    progressText.textContent = 'Extraction du texte...';
     
     let text = "";
-
     try {
         if (file.name.endsWith('.txt')) {
             text = await file.text();
@@ -143,7 +125,6 @@ async function handleFile(file) {
             const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
             text = result.value;
         } else if (file.name.endsWith('.pdf')) {
-            // Lecture très basique du PDF
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             for (let i = 1; i <= pdf.numPages; i++) {
@@ -154,12 +135,9 @@ async function handleFile(file) {
         } else {
             throw new Error("Format non supporté.");
         }
-
-        // Envoi au Worker pour analyse
         startAnalysis(text);
-
     } catch (error) {
-        alert("Erreur lors de la lecture du fichier : " + error.message);
+        alert("Erreur : " + error.message);
         resetBtn.click();
     }
 }
@@ -173,15 +151,15 @@ function startAnalysis(text) {
 }
 
 checkerWorker.onmessage = function(e) {
-    const { type, progress, errors, totalWords } = e.data;
+    const { type, progress, text, errors, totalWords } = e.data;
 
     if (type === 'PROGRESS') {
         progressBar.style.width = `${progress}%`;
         progressPercentage.textContent = `${Math.round(progress)}%`;
+        if (text) progressText.textContent = text; // Met à jour le texte dynamiquement
         
-        // Estimation du temps
-        const elapsed = (Date.now() - startTime) / 1000; // en secondes
-        if (progress > 0) {
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (progress > 5 && progress < 100) { // On commence l'estimation après un peu de chargement
             const totalEstimated = (elapsed / progress) * 100;
             const remaining = Math.round(totalEstimated - elapsed);
             timeEstimate.textContent = `Temps restant estimé : ${remaining} sec`;
@@ -197,12 +175,10 @@ checkerWorker.onmessage = function(e) {
 function displayResults(errors, totalWords) {
     wordCountEl.textContent = totalWords;
     errorCountEl.textContent = errors.length;
-    
     if (errors.length === 0) {
         errorList.innerHTML = "<p>Aucune faute détectée ! 🎉</p>";
         return;
     }
-
     errors.forEach(err => {
         const div = document.createElement('div');
         div.className = 'error-item';
