@@ -318,17 +318,19 @@ async function analyzeWithGemini(text) {
     {
       "word": "le mot exact ou l'expression qui pose problème",
       "context": "la phrase contenant l'erreur",
-      "type": "Grammaire IA", 
+      "type": "Grammaire", 
       "message": "Explication claire de la faute et proposition de correction."
     }
     Règles :
-    - Le "type" doit être parmi : "Orthographe", "Grammaire", "Typographie", "Style".
+    - Le "type" doit STRICTEMENT être parmi : "Orthographe", "Grammaire", "Typographie", "Style".
+    - Ne signale pas l'absence d'accent circonflexe comme une faute si c'est toléré par la réforme de 1990 (ex: maitre, cout).
+    ${dictInstruction}
     - Si aucune faute n'est trouvée, retourne un tableau vide [].
     - Ne retourne RIEN D'AUTRE que le JSON valide.
 
     TEXTE À ANALYSER :
     ${text}`;
-
+    
     try {
         // Étape 4 : Exécution de l'algorithme
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeAiModel}:generateContent?key=${savedApiKey}`, {
