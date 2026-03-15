@@ -12,9 +12,15 @@
 <body>
 
     <main class="container">
-        <header>
-            <h1>Vérificateur Local</h1>
-            <p>Importez un document ou collez votre texte. L'analyse se fait 100% sur votre machine.</p>
+        <header class="main-header">
+            <div class="header-titles">
+                <h1>Vérificateur Local</h1>
+                <p>Importez un document ou collez votre texte.</p>
+            </div>
+            <div class="header-actions">
+                <button id="ia-setup-btn" class="btn-ia">👨‍🏫 Vérif IA</button>
+                <span id="ia-status" class="ia-status-text">❌ Non configurée</span>
+            </div>
         </header>
 
         <section id="input-section">
@@ -99,6 +105,22 @@
     </div>
 
     <button id="info-btn-open" class="info-btn-open" title="Informations de version">ℹ️</button>
+
+    <div id="ia-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-modal" class="close-btn">&times;</span>
+            <h2>Configuration de l'IA 👨‍🏫</h2>
+            <p style="margin-bottom: 15px; font-size: 14px; color: var(--text-muted);">
+                Pour activer la correction grammaticale avancée, veuillez coller votre clé API Gemini. Elle sera sauvegardée localement sur votre navigateur.
+            </p>
+            <input type="password" id="api-key-input" placeholder="Collez votre clé API (AIzaSy...)" class="api-input">
+            <div id="api-validation-msg" class="validation-msg"></div>
+            <button id="save-api-key-btn" class="btn-primary-large" style="margin-top: 15px;">Valider la clé</button>
+            <p style="margin-top: 15px; font-size: 12px; text-align: center;">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="browse-link">Obtenir une clé API gratuite</a>
+            </p>
+        </div>
+    </div>
 
     <script src="main.js"></script>
 </body>
