@@ -169,7 +169,9 @@ let startTime;
 
 function startAnalysis(text) {
     startTime = Date.now();
-    checkerWorker.postMessage({ type: 'START', payload: text });
+    // NOUVEAU : On lit le localStorage (tableau vide par défaut)
+    const customDict = JSON.parse(localStorage.getItem('user_custom_dict') || '[]');
+    checkerWorker.postMessage({ type: 'START', payload: text, customDict: customDict });
 }
 
 checkerWorker.onmessage = function(e) {
@@ -242,22 +244,31 @@ function displayResults(errors, totalWords) {
         const div = document.createElement('div');
         div.className = 'error-item';
         
-        let typeColor = "#6B7280"; // Gris par défaut (Orthographe)
-        if (err.type === "Typographie") typeColor = "#3B82F6"; // Bleu
-        if (err.type === "Grammaire") typeColor = "#F59E0B"; // Orange
-        if (err.type === "Style") typeColor = "#8B5CF6"; // Violet
+        let typeColor = "#6B7280"; 
+        if (err.type === "Typographie") typeColor = "#3B82F6"; 
+        if (err.type === "Grammaire") typeColor = "#F59E0B"; 
+        if (err.type === "Style") typeColor = "#8B5CF6"; 
 
-        // SURLIGNAGE : On sécurise le paragraphe, puis on surligne le mot fautif
         const safeContext = escapeHTML(err.context);
-        const searchRegex = new RegExp(`(${escapeRegExp(err.word)})`, 'g'); // Trouve toutes les occurrences du mot dans le paragraphe
+        const searchRegex = new RegExp(`(${escapeRegExp(err.word)})`, 'g'); 
         const highlightedContext = safeContext.replace(searchRegex, `<span class="highlight-error-word">$1</span>`);
 
+        // NOUVEAU : Le bouton n'apparaît que pour l'orthographe
+        let addDictButtonHTML = "";
+        if (err.type === "Orthographe") {
+            // On passe le mot en paramètre à notre nouvelle fonction
+            addDictButtonHTML = `<button class="btn-add-dict" onclick="addToDictionary('${escapeHTML(err.word)}', this)">➕ Ignorer et Ajouter</button>`;
+        }
+
         div.innerHTML = `
-            <div style="margin-bottom: 5px;">
-                <span style="background-color: ${typeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px;">
-                    ${err.type}
-                </span>
-                <strong style="font-size: 16px;">${escapeHTML(err.word)}</strong>
+            <div class="error-header">
+                <div>
+                    <span style="background-color: ${typeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px;">
+                        ${err.type}
+                    </span>
+                    <strong style="font-size: 16px;">${escapeHTML(err.word)}</strong>
+                </div>
+                ${addDictButtonHTML}
             </div>
             
             <div class="error-context">${highlightedContext}</div>
@@ -268,4 +279,29 @@ function displayResults(errors, totalWords) {
         `;
         errorList.appendChild(div);
     });
+
+// === FONCTION D'AJOUT AU DICTIONNAIRE PERSONNEL ===
+window.addToDictionary = function(word, btnElement) {
+    // 1. Sauvegarde dans le LocalStorage
+    let dict = JSON.parse(localStorage.getItem('user_custom_dict') || '[]');
+    if (!dict.includes(word.toLowerCase())) {
+        dict.push(word.toLowerCase());
+        localStorage.setItem('user_custom_dict', JSON.stringify(dict));
+    }
+
+    // 2. Disparition visuelle (UX fluide)
+    const errorItem = btnElement.closest('.error-item');
+    errorItem.style.opacity = '0';
+    setTimeout(() => {
+        errorItem.remove();
+        
+        // 3. Mise à jour du compteur d'orthographe (bonus visuel)
+        const orthoCountEl = document.getElementById('ortho-count');
+        const currentCount = parseInt(orthoCountEl.textContent);
+        if (currentCount > 0) orthoCountEl.textContent = currentCount - 1;
+        
+        // (Le score global sur 100% se mettra à jour lors de la prochaine analyse)
+    }, 300);
+};
+    
 }
