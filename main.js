@@ -283,11 +283,101 @@ async function handleFile(file) {
 // === COMMUNICATION AVEC LE WORKER ===
 let startTime;
 
-function startAnalysis(text) {
+// === AIGUILLAGE DE L'ANALYSE (LOCAL OU IA) ===
+let startTime;
+
+async function startAnalysis(text) {
     startTime = Date.now();
-    // NOUVEAU : On lit le localStorage (tableau vide par défaut)
-    const customDict = JSON.parse(localStorage.getItem('user_custom_dict') || '[]');
-    checkerWorker.postMessage({ type: 'START', payload: text, customDict: customDict });
+    
+    // Si l'IA est configurée, on l'utilise
+    if (activeAiModel && savedApiKey) {
+        progressText.textContent = `Préparation du modèle ${activeAiModel}...`;
+        await analyzeWithGemini(text);
+    } 
+    // Sinon, on lance le Worker local historique
+    else {
+        const customDict = JSON.parse(localStorage.getItem('user_custom_dict') || '[]');
+        checkerWorker.postMessage({ type: 'START', payload: text, customDict: customDict });
+    }
+}
+
+// === ANALYSE VIA L'API GEMINI ===
+async function analyzeWithGemini(text) {
+    // Étape 1 : Découpage pour les statistiques
+    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0);
+    const totalWords = text.split(/\s+/).filter(m => m.trim().length > 0).length;
+    let allErrors = [];
+
+    // Mise à jour de l'UI
+    progressBar.style.width = '20%';
+    progressPercentage.textContent = '20%';
+    progressText.textContent = `Envoi au modèle ${activeAiModel} (cela peut prendre 5 à 15 secondes)...`;
+    timeEstimate.textContent = "Analyse contextuelle profonde en cours...";
+
+    // Étape 3 : Le Prompt strict imposant un format JSON
+    const prompt = `Agis en tant que correcteur professionnel français (orthographe, grammaire, typographie, style).
+    Analyse le texte suivant et retourne un tableau JSON contenant les erreurs.
+    Format exact attendu pour chaque objet du tableau :
+    {
+      "word": "le mot exact ou l'expression qui pose problème",
+      "context": "la phrase contenant l'erreur",
+      "type": "Grammaire IA", 
+      "message": "Explication claire de la faute et proposition de correction."
+    }
+    Règles :
+    - Le "type" doit être parmi : "Orthographe", "Grammaire", "Typographie", "Style".
+    - Si aucune faute n'est trouvée, retourne un tableau vide [].
+    - Ne retourne RIEN D'AUTRE que le JSON valide.
+
+    TEXTE À ANALYSER :
+    ${text}`;
+
+    try {
+        // Étape 4 : Exécution de l'algorithme
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeAiModel}:generateContent?key=${savedApiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    // Cette ligne magique force Gemini à répondre exclusivement en JSON !
+                    response_mime_type: "application/json" 
+                }
+            })
+        });
+
+        if (!response.ok) throw new Error("Erreur de communication avec l'API Gemini.");
+
+        progressBar.style.width = '80%';
+        progressPercentage.textContent = '80%';
+        progressText.textContent = 'Lecture des résultats de l\'IA...';
+
+        const data = await response.json();
+        const responseText = data.candidates[0].content.parts[0].text;
+        
+        // On convertit la réponse texte de Gemini en véritable tableau JavaScript
+        allErrors = JSON.parse(responseText);
+
+        progressBar.style.width = '100%';
+        progressPercentage.textContent = '100%';
+        progressText.textContent = 'Analyse terminée !';
+        timeEstimate.textContent = "";
+
+        // On reprend le script principal d'affichage !
+        setTimeout(() => {
+            progressSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            displayResults(allErrors, totalWords); 
+        }, 800);
+
+    } catch (error) {
+        console.error(error);
+        alert("L'analyse IA a échoué (" + error.message + ").\n\nBascule automatique sur le correcteur local.");
+        
+        // Mécanisme de secours (Fallback) : si l'IA plante, le Worker prend le relais
+        const customDict = JSON.parse(localStorage.getItem('user_custom_dict') || '[]');
+        checkerWorker.postMessage({ type: 'START', payload: text, customDict: customDict });
+    }
 }
 
 checkerWorker.onmessage = function(e) {
