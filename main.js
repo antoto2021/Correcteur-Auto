@@ -280,9 +280,6 @@ async function handleFile(file) {
     }
 }
 
-// === COMMUNICATION AVEC LE WORKER ===
-let startTime;
-
 // === AIGUILLAGE DE L'ANALYSE (LOCAL OU IA) ===
 let startTime;
 
