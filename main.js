@@ -48,23 +48,43 @@ const apiValidationMsg = document.getElementById('api-validation-msg');
 let activeAiModel = null;
 let savedApiKey = null;
 
-// === GESTION DE LA POP-UP (MODAL IA) ===
+// === GESTION DU BOUTON BASCULE (LOCAL / IA) ===
+let isAiModeEnabled = false; // Par défaut, on force le mode Local
 
-// Ouvrir le modal
-iaSetupBtn.addEventListener('click', () => {
-    iaModal.classList.remove('hidden');
-    // Si une clé existe déjà, on l'affiche dans le champ
-    const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) apiKeyInput.value = storedKey;
+// Initialisation au chargement de la page
+window.addEventListener('DOMContentLoaded', () => {
+    iaStatus.textContent = "💻 Mode Local actif";
 });
 
-// Fermer le modal via la croix
+// Clic sur le bouton "Vérif IA" (L'interrupteur)
+iaSetupBtn.addEventListener('click', () => {
+    if (isAiModeEnabled) {
+        // L'IA était activée -> On la désactive (Retour au Local)
+        isAiModeEnabled = false;
+        iaSetupBtn.classList.remove('active');
+        iaStatus.textContent = "💻 Mode Local actif";
+        iaStatus.classList.remove('text-success');
+    } else {
+        // L'IA était désactivée -> On veut l'activer
+        const storedKey = localStorage.getItem('gemini_api_key');
+        
+        if (storedKey) {
+            // Clé trouvée : on valide silencieusement sans ouvrir le pop-up
+            iaStatus.textContent = "⏳ Connexion...";
+            validateApiKey(storedKey, false); 
+        } else {
+            // Aucune clé : on ouvre le pop-up
+            iaModal.classList.remove('hidden');
+            apiKeyInput.value = ""; 
+        }
+    }
+});
+
+// Fermer le modal via la croix ou un clic à l'extérieur
 closeModalBtn.addEventListener('click', () => {
     iaModal.classList.add('hidden');
     apiValidationMsg.textContent = ""; 
 });
-
-// Fermer le modal en cliquant dans le vide (autour de la boite)
 window.addEventListener('click', (e) => {
     if (e.target === iaModal) {
         iaModal.classList.add('hidden');
@@ -72,84 +92,75 @@ window.addEventListener('click', (e) => {
     }
 });
 
-// === VALIDATION DE LA CLÉ API GEMINI ===
-saveApiKeyBtn.addEventListener('click', async () => {
+// Clic sur "Valider la clé" dans le Pop-up
+saveApiKeyBtn.addEventListener('click', () => {
     const apiKey = apiKeyInput.value.trim();
-    
     if (!apiKey) {
         apiValidationMsg.textContent = "Veuillez entrer une clé API.";
         apiValidationMsg.style.color = "var(--error-color)";
         return;
     }
+    validateApiKey(apiKey, true);
+});
 
-    apiValidationMsg.textContent = "Vérification des modèles disponibles... ⏳";
-    apiValidationMsg.style.color = "var(--text-main)";
-    saveApiKeyBtn.disabled = true;
+// === FONCTION CENTRALE DE VALIDATION API ===
+async function validateApiKey(apiKey, fromModal) {
+    if (fromModal) {
+        apiValidationMsg.textContent = "Vérification des modèles... ⏳";
+        apiValidationMsg.style.color = "var(--text-main)";
+        saveApiKeyBtn.disabled = true;
+    }
 
     try {
-        // Requête officielle à l'API Google pour lister les modèles (sert de test de validation)
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (!response.ok) throw new Error("Clé API invalide ou bloquée.");
         
-        if (!response.ok) {
-            throw new Error("Clé API invalide ou bloquée.");
-        }
-
         const data = await response.json();
-        
-        // 2. Vérification des modèles disponibles : on cherche en priorité la famille "flash" (très rapide)
-        // On cherche gemini-2.5-flash, sinon 1.5-flash, sinon on prend le premier modèle textuel.
         const flashModel = data.models.find(m => m.name.includes('gemini-2.5-flash') || m.name.includes('gemini-1.5-flash')) || data.models.find(m => m.name.includes('gemini'));
         
         if (flashModel) {
-            // Succès !
-            activeAiModel = flashModel.name.replace('models/', ''); // On nettoie le nom (ex: "gemini-2.5-flash")
+            activeAiModel = flashModel.name.replace('models/', '');
             savedApiKey = apiKey;
-            localStorage.setItem('gemini_api_key', apiKey); // Sauvegarde dans le navigateur
+            localStorage.setItem('gemini_api_key', apiKey);
             
-            // Mise à jour visuelle de l'interface
+            // On active l'interface IA (Vert)
+            isAiModeEnabled = true; 
             iaStatus.textContent = `🟢 ${activeAiModel}`;
             iaStatus.classList.add('text-success');
             iaSetupBtn.classList.add('active');
             
-            // Message de succès et fermeture du modal après 1.5s
-            apiValidationMsg.textContent = "Clé validée ! Modèle connecté avec succès. ✅";
-            apiValidationMsg.style.color = "var(--success-color)";
-            setTimeout(() => {
-                iaModal.classList.add('hidden');
-                apiValidationMsg.textContent = "";
-                saveApiKeyBtn.disabled = false;
-            }, 1500);
+            if (fromModal) {
+                apiValidationMsg.textContent = "Clé validée ! Modèle connecté. ✅";
+                apiValidationMsg.style.color = "var(--success-color)";
+                setTimeout(() => {
+                    iaModal.classList.add('hidden');
+                    apiValidationMsg.textContent = "";
+                    saveApiKeyBtn.disabled = false;
+                }, 1200);
+            }
         } else {
-            throw new Error("Aucun modèle de texte compatible trouvé.");
+            throw new Error("Aucun modèle texte compatible trouvé.");
         }
-
     } catch (error) {
-        // En cas d'erreur (mauvaise clé ou pas d'internet)
-        apiValidationMsg.textContent = "❌ " + error.message;
-        apiValidationMsg.style.color = "var(--error-color)";
-        saveApiKeyBtn.disabled = false;
-        
-        // On remet l'interface à zéro
-        iaStatus.textContent = "❌ Non configurée";
+        // En cas d'échec, on force le retour au Local
+        isAiModeEnabled = false;
+        iaStatus.textContent = "💻 Mode Local actif";
         iaStatus.classList.remove('text-success');
         iaSetupBtn.classList.remove('active');
-        localStorage.removeItem('gemini_api_key');
-        activeAiModel = null;
-        savedApiKey = null;
+        
+        if (fromModal) {
+            apiValidationMsg.textContent = "❌ " + error.message;
+            apiValidationMsg.style.color = "var(--error-color)";
+            saveApiKeyBtn.disabled = false;
+        } else {
+            // Échec silencieux (ex: l'utilisateur a révoqué sa clé chez Google), on le prévient
+            localStorage.removeItem('gemini_api_key');
+            iaModal.classList.remove('hidden');
+            apiValidationMsg.textContent = "Votre clé sauvegardée n'est plus valide. ❌";
+            apiValidationMsg.style.color = "var(--error-color)";
+        }
     }
-});
-
-// === VÉRIFICATION AUTOMATIQUE AU DÉMARRAGE ===
-// Si l'utilisateur revient le lendemain, on vérifie sa clé silencieusement
-window.addEventListener('DOMContentLoaded', () => {
-    const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) {
-        apiKeyInput.value = storedKey;
-        // On déclenche un faux clic discret pour valider le modèle en arrière-plan
-        saveApiKeyBtn.click(); 
-        iaModal.classList.add('hidden'); // On s'assure que le modal ne saute pas à l'écran
-    }
-});
+}
 
 // === GESTION DU VERSIONING ===
 infoBtnOpen.addEventListener('click', () => {
