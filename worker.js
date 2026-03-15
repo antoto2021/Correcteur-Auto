@@ -44,9 +44,11 @@ async function initChecker() {
     const affData = await fetchWithProgress(urlAff, "des règles grammaticales", 0, 5);
     const dicData = await fetchWithProgress(urlDic, "du dictionnaire principal", 5, 25);
 
-    self.postMessage({ type: 'PROGRESS', progress: 32, text: 'Construction du moteur...' });
+    self.postMessage({ type: 'PROGRESS', progress: 32, text: 'Création du dictionnaire en RAM (ceci peut prendre 3 à 5 secondes)...' });
     await new Promise(r => setTimeout(r, 150));
     checker = new Typo("fr_FR", affData, dicData);
+    // NOUVEAU : On valide que le moteur est prêt
+    self.postMessage({ type: 'PROGRESS', progress: 35, text: 'Moteur prêt ! Lancement de l\'analyse...' });
 }
 
 self.onmessage = async function(e) {
@@ -122,11 +124,15 @@ async function analyserTexte(text) {
 
         processedParagraphs++;
         
-        // Mise à jour de la jauge (pour ne pas saturer, on l'envoie tous les 5 paragraphes)
-        if (processedParagraphs % 5 === 0 || processedParagraphs === totalParagraphs) {
-            const progress = 35 + (processedParagraphs / totalParagraphs) * 65; 
-            self.postMessage({ type: 'PROGRESS', progress: progress, text: `Analyse : ${processedParagraphs} paragraphes sur ${totalParagraphs}...` });
-        }
+        // CORRECTION : Mise à jour de la jauge À CHAQUE paragraphe pour plus de fluidité
+        // On s'assure que progress ne dépasse pas 99% tant que ce n'est pas totalement fini
+        let progress = 35 + (processedParagraphs / totalParagraphs) * 64; 
+        
+        self.postMessage({ 
+            type: 'PROGRESS', 
+            progress: progress, 
+            text: `Analyse : ${processedParagraphs} paragraphes sur ${totalParagraphs}...` 
+        });
     }
 
     self.postMessage({ type: 'DONE', errors: errors, totalWords: totalWords });
