@@ -94,7 +94,7 @@ async function analyserTexte(text) {
         // 2. ANALYSE ORTHOGRAPHIQUE (mot par mot dans le paragraphe)
         motsBruts.forEach(motBrut => {
             let motPropre = motBrut.replace(/^[.,!?()\[\]{};:«»"“”\-_]+|[.,!?()\[\]{};:«»"“”\-_]+$/g, '');
-            motPropre = motPropre.replace(/^[ldjmntsctyqu]['’]/i, '');
+            motPropre = motPropre.replace(/^(l|d|j|m|n|t|s|c|y|qu|jusqu|lorsqu|puisqu|quoiqu)['’´‘]/i, '');
 
             if (motPropre.length > 1 && isNaN(motPropre)) {
                 const estAcronyme = (motPropre === motPropre.toUpperCase());
