@@ -2,6 +2,7 @@ importScripts('https://cdn.jsdelivr.net/npm/typo-js@1.1.0/typo.min.js');
 importScripts('rules.js'); // <-- COUPLAGE DU FICHIER RULES.JS
 
 let checker = null;
+let dynamicDict = new Set(); // NOUVEAU : Pour stocker les mots de l'utilisateur
 
 // [La fonction fetchWithProgress reste exactement la même]
 async function fetchWithProgress(url, nomFichier, baseProgress, partDeProgression) {
@@ -50,11 +51,16 @@ async function initChecker() {
 
 self.onmessage = async function(e) {
     if (e.data.type === 'START') {
+        // NOUVEAU : On récupère le dictionnaire utilisateur envoyé par main.js
+        if (e.data.customDict) {
+            dynamicDict = new Set(e.data.customDict.map(w => w.toLowerCase()));
+        }
+
         await initChecker();
         self.postMessage({ type: 'PROGRESS', progress: 35, text: 'Analyse du document en cours...' });
         await analyserTexte(e.data.payload);
     }
-};
+};;
 
 async function analyserTexte(text) {
     let errors = [];
@@ -92,7 +98,7 @@ async function analyserTexte(text) {
 
             if (motPropre.length > 1 && isNaN(motPropre)) {
                 const estAcronyme = (motPropre === motPropre.toUpperCase());
-                const estDansDictPerso = typeof dictionnairePersonnel !== 'undefined' && dictionnairePersonnel.has(motPropre.toLowerCase());
+                const estDansDictPerso = (typeof dictionnairePersonnel !== 'undefined' && dictionnairePersonnel.has(motPropre.toLowerCase())) || dynamicDict.has(motPropre.toLowerCase());
 
                 if (!estAcronyme && !estDansDictPerso) {
                     let estValide = checker.check(motPropre) || checker.check(motPropre.toLowerCase());
