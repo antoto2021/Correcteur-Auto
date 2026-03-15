@@ -294,11 +294,12 @@ async function handleFile(file) {
 // === AIGUILLAGE DE L'ANALYSE (LOCAL OU IA) ===
 let startTime;
 
+// === AIGUILLAGE DE L'ANALYSE (LOCAL OU IA) ===
 async function startAnalysis(text) {
     startTime = Date.now();
     
-    // Si l'IA est configurée, on l'utilise
-    if (activeAiModel && savedApiKey) {
+    // NOUVEAU : On vérifie si l'utilisateur a volontairement activé le bouton (isAiModeEnabled)
+    if (isAiModeEnabled && activeAiModel && savedApiKey) {
         progressText.textContent = `Préparation du modèle ${activeAiModel}...`;
         await analyzeWithGemini(text);
     } 
