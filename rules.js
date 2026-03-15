@@ -226,15 +226,36 @@ const grammarRules = [
         regex: /\b(ajouter en plus)\b/gi, 
         message: "C'est un pléonasme. « Ajouter » suffit.",
         type: "Style"
+    },
+    // --- 6. RÉFORME ORTHOGRAPHIQUE DE 1990 ---
+    {
+        id: "reforme_1990_circonflexe_i",
+        // Liste des mots courants perdant leur accent sur le i
+        regex: /\b(maitre|maitres|maitresse|maitresses|boite|boites|chaine|chaines|connaitre|paraitre|s'il vous plait|huitre|huitres|entrainer|entrainement|entrainements)\b/gi,
+        message: "Réforme de 1990 : l'accent circonflexe sur le 'i' n'est plus obligatoire. Cette orthographe est juste, mais la forme traditionnelle (maître, boîte, connaître...) est souvent exigée dans un cadre formel. À vous de choisir votre convention.",
+        type: "Réforme 1990"
+    },
+    {
+        id: "reforme_1990_circonflexe_u",
+        // Liste des mots courants perdant leur accent sur le u
+        regex: /\b(cout|couts|gout|gouts|aout)\b/gi,
+        message: "Réforme de 1990 : l'accent circonflexe sur le 'u' n'est plus obligatoire (sauf pour mûr/mur, dû/du, etc.). L'orthographe est tolérée, mais la forme traditionnelle (coût, goût, août) reste recommandée.",
+        type: "Réforme 1990"
     }
 ];
 
 // === DICTIONNAIRE PERSONNEL (Whitelist) ===
 // Tous les mots en minuscules ici. Ils ne seront jamais signalés comme fautes d'orthographe.
 const dictionnairePersonnel = new Set([
+    // Vos mots techniques actuels
     "bdd", "api", "pdf", "docx", "appli", "github", "rh", "manager", "feedback", 
     "excel", "startup", "web", "email", "mail", "newsletter", "workflow", "process",
     "saas", "cloud", "ui", "ux", "frontend", "backend", "dashboard", "deadline", "debug", 
     "roadmap", "freelance", "sprint", "agile", "scrum", "lead", "onboarding", "call", "meeting", 
-    "brainstorming", "brief", "débrief", "manager", "management", "open-source", "plugin", "setup" // J'ai ajouté un peu de vocabulaire tech classique
+    "brainstorming", "brief", "débrief", "manager", "management", "open-source", "plugin", "setup",
+    
+    // NOUVEAU : Mots de la réforme 1990 pour éviter l'erreur "rouge" d'orthographe
+    "maitre", "maitres", "maitresse", "maitresses", "boite", "boites", "chaine", "chaines", 
+    "connaitre", "paraitre", "plait", "huitre", "huitres", "entrainer", "entrainement", 
+    "entrainements", "cout", "couts", "gout", "gouts", "aout"
 ]);
