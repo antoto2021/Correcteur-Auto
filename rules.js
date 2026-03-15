@@ -137,6 +137,22 @@ const grammarRules = [
         message: "Après une préposition (sans, pour, de...), le verbe se met à l'infinitif (-er).",
         type: "Grammaire"
     },
+    // --- ACCORDS EN NOMBRE (Pluriels) ---
+    {
+        id: "gram_pluriel_plusieurs_quelques",
+        // Cherche "plusieurs" ou "quelques" suivi d'un mot qui NE se termine PAS par s, x ou z
+        regex: /\b(plusieurs|quelques|différents|différentes|divers|diverses)\s+([a-zA-ZÀ-ÿ]+(?<![sxz]))\b/gi, 
+        message: "Après des mots comme 'plusieurs' ou 'quelques', le mot suivant prend généralement la marque du pluriel (s ou x).",
+        type: "Grammaire"
+    },
+    {
+        id: "gram_pluriel_chiffres",
+        // Cherche un chiffre (2 à 999) écrit en lettres suivi d'un mot singulier
+        // Ex: "trois pomme", "mille euro"
+        regex: /\b(deux|trois|quatre|cinq|six|sept|huit|neuf|dix|vingt|cent|mille)\s+([a-zA-ZÀ-ÿ]+(?<![sxz]))\b/gi,
+        message: "Après un nombre au pluriel, le nom prend généralement un 's' ou un 'x'.",
+        type: "Grammaire"
+    },
 
     // --- 4. EXPRESSIONS FIGÉES (Erreurs fréquentes) ---
     {
