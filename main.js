@@ -247,7 +247,9 @@ function displayResults(errors, totalWords) {
         let typeColor = "#6B7280"; 
         if (err.type === "Typographie") typeColor = "#3B82F6"; 
         if (err.type === "Grammaire") typeColor = "#F59E0B"; 
-        if (err.type === "Style") typeColor = "#8B5CF6"; 
+        if (err.type === "Style") typeColor = "#8B5CF6";
+        // NOUVELLE COULEUR : Un orange bien vif pour la réforme orthographique
+        if (err.type === "Réforme 1990") typeColor = "#F97316";
 
         const safeContext = escapeHTML(err.context);
         const searchRegex = new RegExp(`(${escapeRegExp(err.word)})`, 'g'); 
