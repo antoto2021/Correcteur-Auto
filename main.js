@@ -298,20 +298,22 @@ async function startAnalysis(text) {
     }
 }
 
-// === ANALYSE VIA L'API GEMINI ===
+// === ANALYSE VIA L'API GEMINI (V2 AVEC FALLBACK INTELLIGENT) ===
 async function analyzeWithGemini(text) {
-    // Étape 1 : Découpage pour les statistiques
-    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0);
     const totalWords = text.split(/\s+/).filter(m => m.trim().length > 0).length;
     let allErrors = [];
 
-    // Mise à jour de l'UI
     progressBar.style.width = '20%';
     progressPercentage.textContent = '20%';
-    progressText.textContent = `Envoi au modèle ${activeAiModel} (cela peut prendre 5 à 15 secondes)...`;
     timeEstimate.textContent = "Analyse contextuelle profonde en cours...";
 
-    // Étape 3 : Le Prompt strict imposant un format JSON
+    // 1. CORRECTION DU BUG : Définition propre des variables du dictionnaire
+    const customDict = JSON.parse(localStorage.getItem('user_custom_dict') || '[]');
+    const dictInstruction = customDict.length > 0 
+        ? `- IGNORE STRICTEMENT les mots techniques, sigles ou jargons suivants : ${customDict.join(', ')}.` 
+        : '';
+
+    // 2. Préparation du Prompt
     const prompt = `Agis en tant que correcteur professionnel français (orthographe, grammaire, typographie, style).
     Analyse le texte suivant et retourne un tableau JSON contenant les erreurs.
     Format exact attendu pour chaque objet du tableau :
@@ -330,51 +332,66 @@ async function analyzeWithGemini(text) {
 
     TEXTE À ANALYSER :
     ${text}`;
-    
-    try {
-        // Étape 4 : Exécution de l'algorithme
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeAiModel}:generateContent?key=${savedApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    // Cette ligne magique force Gemini à répondre exclusivement en JSON !
-                    response_mime_type: "application/json" 
-                }
-            })
-        });
 
-        if (!response.ok) throw new Error("Erreur de communication avec l'API Gemini.");
+    // 3. VOTRE IDÉE : Liste des modèles à tester en cascade
+    // On met le modèle choisi par l'utilisateur en premier, puis on ajoute des roues de secours
+    const modelsToTry = [activeAiModel, 'gemini-2.5-flash', 'gemini-1.5-flash'];
+    let success = false;
 
-        progressBar.style.width = '80%';
-        progressPercentage.textContent = '80%';
-        progressText.textContent = 'Lecture des résultats de l\'IA...';
-
-        const data = await response.json();
-        const responseText = data.candidates[0].content.parts[0].text;
+    // 4. Boucle de test des modèles
+    for (const model of modelsToTry) {
+        if (!model) continue; // Sécurité si un modèle est vide
         
-        // On convertit la réponse texte de Gemini en véritable tableau JavaScript
-        allErrors = JSON.parse(responseText);
+        try {
+            progressText.textContent = `Envoi au modèle ${model}...`;
 
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${savedApiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { response_mime_type: "application/json" } // Force le format JSON
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erreur API (Code: ${response.status})`);
+            }
+
+            // Si ça passe, on met à jour la jauge !
+            progressBar.style.width = '80%';
+            progressPercentage.textContent = '80%';
+            progressText.textContent = `Lecture des résultats de l'IA (${model})...`;
+
+            const data = await response.json();
+            const responseText = data.candidates[0].content.parts[0].text;
+            
+            allErrors = JSON.parse(responseText);
+            success = true; // On valide le succès
+            break; // LE MODÈLE A FONCTIONNÉ, ON SORT DE LA BOUCLE !
+
+        } catch (err) {
+            console.warn(`Échec avec le modèle ${model} :`, err.message);
+            progressText.textContent = `Échec de ${model}, test du modèle suivant...`;
+            // La boucle continue automatiquement et teste le modèle suivant
+        }
+    }
+
+    // 5. Affichage des résultats OU Bascule sur le local
+    if (success) {
         progressBar.style.width = '100%';
         progressPercentage.textContent = '100%';
         progressText.textContent = 'Analyse terminée !';
         timeEstimate.textContent = "";
 
-        // On reprend le script principal d'affichage !
         setTimeout(() => {
             progressSection.classList.add('hidden');
             resultsSection.classList.remove('hidden');
             displayResults(allErrors, totalWords); 
         }, 800);
-
-    } catch (error) {
-        console.error(error);
-        alert("L'analyse IA a échoué (" + error.message + ").\n\nBascule automatique sur le correcteur local.");
-        
-        // Mécanisme de secours (Fallback) : si l'IA plante, le Worker prend le relais
-        const customDict = JSON.parse(localStorage.getItem('user_custom_dict') || '[]');
+    } else {
+        // Ultime recours : Aucun modèle IA n'a répondu
+        alert("Les serveurs IA sont inaccessibles ou votre quota est dépassé.\n\nBascule automatique sur le correcteur local (100% hors-ligne).");
         checkerWorker.postMessage({ type: 'START', payload: text, customDict: customDict });
     }
 }
