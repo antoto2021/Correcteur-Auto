@@ -183,12 +183,19 @@ checkerWorker.onmessage = function(e) {
         if (text) progressText.textContent = text; 
         
         const elapsed = (Date.now() - startTime) / 1000;
+        
+        // CORRECTION DE L'ESTIMATION DU TEMPS
         if (progress > 5 && progress < 100) { 
-            const totalEstimated = (elapsed / progress) * 100;
-            const remaining = Math.round(totalEstimated - elapsed);
-            timeEstimate.textContent = `Temps restant estimé : ${remaining} sec`;
+            if (progress === 32) {
+                // Typo.js est en train de geler le Worker
+                timeEstimate.textContent = "Traitement des données linguistiques...";
+            } else {
+                const totalEstimated = (elapsed / progress) * 100;
+                const remaining = Math.max(1, Math.round(totalEstimated - elapsed)); // Empêche d'afficher 0 sec
+                timeEstimate.textContent = `Temps restant estimé : ~${remaining} sec`;
+            }
         }
-    } 
+    }
     else if (type === 'DONE') {
         progressSection.classList.add('hidden');
         resultsSection.classList.remove('hidden');
