@@ -126,8 +126,10 @@ header p {
 
 .score-cards {
     display: flex;
+    flex-wrap: wrap; /* MAGIE : Permet aux cartes de passer à la ligne */
     gap: 15px;
-    margin-bottom: 20px;
+    justify-content: center;
+    margin-bottom: 25px;
 }
 
 .card {
