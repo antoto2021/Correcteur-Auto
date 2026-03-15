@@ -611,3 +611,81 @@ header p {
     font-weight: 500;
     text-align: center;
 }
+
+/* ==========================================================
+   === RÈGLES SPÉCIFIQUES POUR ÉCRANS MOBILES (max 600px) ===
+   ========================================================== */
+@media (max-width: 600px) {
+
+    /* --- POINT 1 : UTILISATION DE TOUT L'ÉCRAN --- */
+    .container {
+        padding: 20px 10px; /* Moins d'espacement global, très peu sur les côtés */
+        max-width: 100%; /* S'étend sur toute la largeur disponible */
+        border-radius: 0; /* Enlève les coins arrondis pour coller aux bords */
+        box-shadow: none; /* Enlève l'ombre pour un look mobile plus "flat" */
+    }
+
+    /* --- POINT 2 & 4 : INTÉGRATION DU BOUTON ET TITRES --- */
+    .main-header {
+        flex-direction: column; /* Empile les titres et les actions */
+        align-items: center; /* Centre tout */
+        position: static; /* Retire le positionnement relatif */
+    }
+
+    .header-titles {
+        margin-bottom: 15px; /* Espace avant le bouton */
+    }
+
+    .header-titles p {
+        font-size: 13px; /* Légère réduction du sous-titre */
+    }
+
+    .header-actions {
+        position: static; /* Retire l'absolute positioning du bouton sur mobile */
+        align-items: center; /* Centre le bouton et le statut */
+        width: 100%; /* S'assure que le bouton est centré sur sa zone */
+    }
+
+    /* --- POINT 3 : RÉDUCTION DE LA TAILLE DES CARRÉS --- */
+    .score-cards {
+        flex-direction: column; /* Carrés empilés verticalement sur mobile */
+        gap: 10px;
+    }
+
+    .score-cards .card {
+        padding: 15px; /* Carrés moins hauts */
+        text-align: left; /* Aligne le texte à gauche pour économiser de l'espace vertical */
+        width: 100%; /* S'étend sur toute la largeur */
+    }
+
+    .score-cards .card h3 {
+        font-size: 13px; /* Titres des carrés plus petits */
+        margin-bottom: 4px; /* Moins d'espace */
+    }
+
+    .score-cards .card p {
+        font-size: 26px; /* Chiffres des carrés légèrement réduits */
+    }
+
+    .score-cards .card span {
+        font-size: 11px; /* Texte d'unité plus petit */
+    }
+
+    /* --- POINT 5 : AFFICHAGE DES FAUTES PLUS GRAND --- */
+    .error-context {
+        font-size: 16px; /* Augmente la taille du texte de l'erreur pour la lecture sur mobile */
+        line-height: 1.5; /* Légère réduction d'espacement entre les lignes */
+        padding: 10px; /* Moins de padding */
+    }
+
+    .error-item em {
+        font-size: 14px; /* Augmente la taille des conseils pour mobile */
+    }
+
+    /* Réduit l'espace vertical entre chaque carte d'erreur */
+    .error-item {
+        margin-bottom: 15px;
+        padding: 15px;
+    }
+}
+
